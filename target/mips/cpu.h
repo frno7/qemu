@@ -182,6 +182,7 @@ struct TCState {
 
     /* Upper 64-bit multimedia registers (MMRs); the lower 64-bit are GPRs */
     uint64_t mmr[32];
+    uint32_t sar;    /* Shift amount (SA) register */
 };
 
 typedef struct CPUMIPSState CPUMIPSState;

@@ -2468,6 +2468,7 @@ static TCGv_i64 msa_wr_d[64];
 #if defined(TARGET_MIPS64)
 /* Upper 64-bit multimedia registers (MMRs); the lower 64-bit are GPRs */
 static TCGv_i64 cpu_mmr[32];
+static TCGv_i32 cpu_sar;    /* Shift amount (SA) register */
 #else
 /* MXU registers */
 static TCGv mxu_gpr[NUMBER_OF_MXU_REGISTERS - 1];
@@ -29935,6 +29936,10 @@ void mips_tcg_init(void)
                                             offsetof(CPUMIPSState,
                                                      active_tc.mmr[i]),
                                             regnames[i]);
+    cpu_sar = tcg_global_mem_new_i32(cpu_env,
+                                     offsetof(CPUMIPSState,
+                                              active_tc.sar),
+                                     "sa");
 #else
     for (i = 0; i < NUMBER_OF_MXU_REGISTERS - 1; i++) {
         mxu_gpr[i] = tcg_global_mem_new(cpu_env,
