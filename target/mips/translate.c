@@ -23993,6 +23993,36 @@ static void decode_opc_special_r6(CPUMIPSState *env, DisasContext *ctx)
     }
 }
 
+#if defined(TARGET_MIPS64)
+static void gen_mfsa(DisasContext *ctx)
+{
+    int z0 = extract32(ctx->opcode, 6, 5);
+    int rd = extract32(ctx->opcode, 11, 5);
+    int z1 = extract32(ctx->opcode, 16, 10);
+
+    if (z0 != 0 || z1 != 0) {
+        generate_exception_end(ctx, EXCP_RI);
+    } else if (rd != 0) {
+        tcg_gen_ext_i32_tl(cpu_gpr[rd], cpu_sar);
+    }
+}
+
+static void gen_mtsa(DisasContext *ctx)
+{
+    int z0 = extract32(ctx->opcode, 6, 15);
+    int rs = extract32(ctx->opcode, 21, 5);
+
+    if (z0 != 0) {
+        generate_exception_end(ctx, EXCP_RI);
+    } else if (rs != 0) {
+        tcg_gen_trunc_tl_i32(cpu_sar, cpu_gpr[rs]);
+        tcg_gen_andi_i32(cpu_sar, cpu_sar, 0xF);
+    } else {
+        tcg_gen_movi_i32(cpu_sar, 0);
+    }
+}
+#endif /* defined(TARGET_MIPS64) */
+
 static void decode_opc_special_tx79(CPUMIPSState *env, DisasContext *ctx)
 {
     int rs = extract32(ctx->opcode, 21, 5);
@@ -24029,7 +24059,15 @@ static void decode_opc_special_tx79(CPUMIPSState *env, DisasContext *ctx)
         check_insn_opc_user_only(ctx, INSN_R5900);
         gen_muldiv(ctx, op1, 0, rs, rt);
         break;
-#endif
+    case MMI_OPC_MFSA:
+        check_insn(ctx, INSN_R5900);
+        gen_mfsa(ctx);
+        break;
+    case MMI_OPC_MTSA:
+        check_insn(ctx, INSN_R5900);
+        gen_mtsa(ctx);
+        break;
+#endif /* defined(TARGET_MIPS64) */
     case OPC_JR:
         gen_compute_branch(ctx, op1, 4, rs, 0, 0, 4);
         break;
@@ -27610,6 +27648,37 @@ static void decode_mmi_sq(CPUMIPSState *env, DisasContext *ctx)
     gen_mmi_sq(ctx, base, rt, offset);
 }
 
+#if defined(TARGET_MIPS64)
+static void gen_mtsab(DisasContext *ctx)
+{
+    int rs = extract32(ctx->opcode, 21, 5);
+    int imm = extract32(ctx->opcode, 0, 16);
+
+    if (rs == 0) {
+        tcg_gen_movi_i32(cpu_sar, 0);
+    } else {
+        tcg_gen_trunc_tl_i32(cpu_sar, cpu_gpr[rs]);
+    }
+    tcg_gen_xori_i32(cpu_sar, cpu_sar, imm);
+    tcg_gen_andi_i32(cpu_sar, cpu_sar, 0xF);
+}
+
+static void gen_mtsah(DisasContext *ctx)
+{
+    int rs = extract32(ctx->opcode, 21, 5);
+    int imm = extract32(ctx->opcode, 0, 16);
+
+    if (rs == 0) {
+        tcg_gen_movi_i32(cpu_sar, 0);
+    } else {
+        tcg_gen_trunc_tl_i32(cpu_sar, cpu_gpr[rs]);
+    }
+    tcg_gen_xori_i32(cpu_sar, cpu_sar, imm);
+    tcg_gen_shli_i32(cpu_sar, cpu_sar, 1);
+    tcg_gen_andi_i32(cpu_sar, cpu_sar, 0xF);
+}
+#endif /* defined(TARGET_MIPS64) */
+
 static void decode_opc_special3(CPUMIPSState *env, DisasContext *ctx)
 {
     int rs, rt, rd, sa;
@@ -28974,6 +29043,16 @@ static void decode_opc(CPUMIPSState *env, DisasContext *ctx)
             check_insn(ctx, ISA_MIPS32R6);
             generate_exception_end(ctx, EXCP_RI);
             break;
+#if defined(TARGET_MIPS64)
+        case MMI_OPC_MTSAB:
+            check_insn(ctx, INSN_R5900);
+            gen_mtsab(ctx);
+            break;
+        case MMI_OPC_MTSAH:
+            check_insn(ctx, INSN_R5900);
+            gen_mtsah(ctx);
+            break;
+#endif /* defined(TARGET_MIPS64) */
         case OPC_SYNCI:
             check_insn(ctx, ISA_MIPS32R2);
             /* Break the TB to be able to sync copied instructions
