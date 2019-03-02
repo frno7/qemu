@@ -2213,6 +2213,16 @@ enum {
     MMI_OPC_SQ        = 0x1F << 26,    /* Same as OPC_SPECIAL3 */
 };
 
+enum {
+    MMI_OPC_MFSA = 0x28 | OPC_SPECIAL,
+    MMI_OPC_MTSA = 0x29 | OPC_SPECIAL,
+};
+
+enum {
+    MMI_OPC_MTSAB = (0x18 << 16) | OPC_REGIMM,
+    MMI_OPC_MTSAH = (0x19 << 16) | OPC_REGIMM,
+};
+
 /*
  * MMI instructions with opcode field = MMI:
  *
